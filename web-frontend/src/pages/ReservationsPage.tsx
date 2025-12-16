@@ -141,12 +141,20 @@ const ReservationsPage = () => {
                   </button>
                 )}
                 {r.status === 'active' && r.type === 'item' && (
-                  <button
-                    onClick={() => handleAction(r.id, 'return')}
-                    className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
-                  >
-                    반납 처리
-                  </button>
+                  <>
+                    <button
+                      onClick={() => handleAction(r.id, 'cancel')}
+                      className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
+                    >
+                      대여 취소
+                    </button>
+                    <button
+                      onClick={() => handleAction(r.id, 'return')}
+                      className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
+                    >
+                      반납 처리
+                    </button>
+                  </>
                 )}
               </div>
             </div>

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import DateTimePicker from '../components/DateTimePicker'
 import { useAppState } from '../state/AppState'
 import type { LectureRoom, Reservation } from '../types'
 
@@ -32,6 +33,16 @@ const RoomsPage = () => {
     reservations
       .filter((r) => r.type === 'lecture' && r.resourceId === roomId && r.status === 'active')
       .sort((a, b) => a.date.localeCompare(b.date))
+
+  const disabledRangesFor = (roomId: string, isoDate: string) => {
+    const sameDay = reservations.filter(
+      (r) => r.type === 'lecture' && r.status === 'active' && r.resourceId === roomId && r.date === isoDate,
+    )
+    return sameDay.map((r) => ({
+      startHour: Number(r.startTime.split(':')[0] ?? '0'),
+      endHour: Number(r.endTime.split(':')[0] ?? '0'),
+    }))
+  }
 
   const handleReserve = async () => {
     if (!selectedRoom) return
@@ -156,42 +167,27 @@ const RoomsPage = () => {
                 </button>
               </div>
 
-              <div className="mt-4 grid gap-3 md:grid-cols-4">
-                <label className="text-sm text-slate-700">
-                  날짜
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </label>
-                <label className="text-sm text-slate-700">
-                  시작
-                  <input
-                    type="time"
-                    value={start}
-                    onChange={(e) => setStart(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </label>
-                <label className="text-sm text-slate-700">
-                  종료
-                  <input
-                    type="time"
-                    value={end}
-                    onChange={(e) => setEnd(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </label>
-                <div className="flex items-end">
-                  <button
-                    onClick={handleReserve}
-                    className="w-full rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow hover:-translate-y-0.5"
-                  >
-                    예약 생성
-                  </button>
-                </div>
+              <div className="mt-5">
+                <DateTimePicker
+                  selectedDate={date}
+                  onDateChange={(d) => setDate(d)}
+                  startTime={start}
+                  endTime={end}
+                  onTimeChange={(s, e) => {
+                    setStart(s)
+                    setEnd(e)
+                  }}
+                  disabledRanges={disabledRangesFor(selectedRoom.id, date)}
+                />
+              </div>
+
+              <div className="mt-5 flex justify-end">
+                <button
+                  onClick={handleReserve}
+                  className="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow hover:-translate-y-0.5"
+                >
+                  예약 생성
+                </button>
               </div>
             </div>
           )}

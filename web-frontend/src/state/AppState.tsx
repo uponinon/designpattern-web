@@ -2,6 +2,8 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import { fakeApi } from '../services/fakeApi'
 import type { LectureRoom, RentableItem, Reservation, User } from '../types'
 
+const STORAGE_KEY = 'dku-room-booker:userId'
+
 type ActionResult<T = void> =
   | { ok: true; data?: T }
   | {
@@ -16,6 +18,9 @@ type AppState = {
   rooms: LectureRoom[]
   items: RentableItem[]
   reservations: Reservation[]
+  login: (params: { userId: string; password: string }) => Promise<ActionResult<User>>
+  signup: (params: { userId: string; name: string; password: string }) => Promise<ActionResult<User>>
+  logout: () => void
   switchUser: (userId: string) => Promise<ActionResult<User>>
   refreshAll: () => Promise<void>
   createLectureReservation: (params: {
@@ -55,10 +60,17 @@ export const AppStateProvider = ({ children }: { children: React.ReactNode }) =>
       fakeApi.listReservations(),
     ])
     setUsers(userList.data)
-    if (!user) setUser(userList.data[0] ?? null)
     setRooms(roomList.data)
     setItems(itemList.data)
     setReservations(reservationList.data)
+
+    const savedUserId = localStorage.getItem(STORAGE_KEY)
+    if (savedUserId) {
+      const u = userList.data.find((x) => x.id === savedUserId) ?? null
+      setUser(u)
+    } else {
+      setUser(null)
+    }
     setReady(true)
   }
 
@@ -72,11 +84,34 @@ export const AppStateProvider = ({ children }: { children: React.ReactNode }) =>
   }
 
   const actions = useMemo(() => {
-    const switchUser = async (userId: string): Promise<ActionResult<User>> => {
-      const result = await fakeApi.login(userId)
+    const login: AppState['login'] = async ({ userId, password }) => {
+      const result = await fakeApi.login(userId, password)
       if (result.error || !result.data) return { ok: false, error: result.error ?? '로그인 실패' }
       setUser(result.data)
+      localStorage.setItem(STORAGE_KEY, result.data.id)
       return { ok: true, data: result.data }
+    }
+
+    const signup: AppState['signup'] = async ({ userId, name, password }) => {
+      const result = await fakeApi.register({ userId, name, password, role: 'student' })
+      if (result.error || !result.data) return { ok: false, error: result.error ?? '회원가입 실패' }
+      setUsers((prev) => [...prev, result.data!])
+      setUser(result.data)
+      localStorage.setItem(STORAGE_KEY, result.data.id)
+      return { ok: true, data: result.data }
+    }
+
+    const logout: AppState['logout'] = () => {
+      setUser(null)
+      localStorage.removeItem(STORAGE_KEY)
+    }
+
+    const switchUser = async (userId: string): Promise<ActionResult<User>> => {
+      const u = users.find((x) => x.id === userId)
+      if (!u) return { ok: false, error: '사용자를 찾을 수 없습니다.' }
+      setUser(u)
+      localStorage.setItem(STORAGE_KEY, u.id)
+      return { ok: true, data: u }
     }
 
     const createLectureReservation: AppState['createLectureReservation'] = async (params) => {
@@ -164,6 +199,9 @@ export const AppStateProvider = ({ children }: { children: React.ReactNode }) =>
     }
 
     return {
+      login,
+      signup,
+      logout,
       switchUser,
       createLectureReservation,
       rentItem,
@@ -176,7 +214,7 @@ export const AppStateProvider = ({ children }: { children: React.ReactNode }) =>
       updateItem,
       deleteItem,
     }
-  }, [user])
+  }, [user, users])
 
   const value: AppState = {
     ready,
@@ -185,6 +223,9 @@ export const AppStateProvider = ({ children }: { children: React.ReactNode }) =>
     rooms,
     items,
     reservations,
+    login: actions.login,
+    signup: actions.signup,
+    logout: actions.logout,
     refreshAll,
     switchUser: (id) => actions.switchUser(id),
     createLectureReservation: actions.createLectureReservation,
