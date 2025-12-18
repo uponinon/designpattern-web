@@ -1,0 +1,15 @@
+# Java / Gradle
+.gradle/
+build/
+out/
+
+# IDE
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Nested project (do not track as submodule)
+DesignPatternProject_강의실 예약/
