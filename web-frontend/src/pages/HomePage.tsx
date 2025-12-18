@@ -11,13 +11,12 @@ const HomePage = () => {
   return (
     <div className="space-y-10">
       <section className="rounded-3xl bg-white/90 p-8 shadow-xl shadow-indigo-200/30 ring-1 ring-slate-100">
-        <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">관리자 모드</p>
+        <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">대시보드</p>
         <h1 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">
           단국대 예약관리 <span className="text-indigo-600">대시보드</span>
         </h1>
         <p className="mt-4 max-w-2xl text-lg text-slate-600">
-          현재는 더미 데이터/가짜 API로 운영 흐름을 시뮬레이션합니다. 리소스(강의실/물품) 관리와 예약 현황 확인을 한 화면에서
-          확인할 수 있도록 구성합니다.
+          강의실/물품 현황과 예약·대여 현황을 한 화면에서 확인하고, 필요한 메뉴로 빠르게 이동할 수 있습니다.
         </p>
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <Link

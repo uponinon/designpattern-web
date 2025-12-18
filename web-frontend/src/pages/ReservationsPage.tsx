@@ -59,7 +59,7 @@ const ReservationsPage = () => {
           <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">내 예약/대여</p>
           <h2 className="mt-2 text-2xl font-bold text-slate-900">예약 취소 · 물품 반납</h2>
           <p className="mt-1 text-slate-600">
-            Swing 기능: 내 예약 조회, 강의실 예약 취소, 물품 대여/반납 흐름을 더미 데이터로 재현합니다.
+            내 예약/대여 내역을 확인하고, 필요 시 취소 또는 반납 처리할 수 있습니다.
           </p>
         </div>
         {message && <div className="rounded-full bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700">{message}</div>}

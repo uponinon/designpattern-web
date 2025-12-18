@@ -82,7 +82,7 @@ const Layout = () => {
 
       <footer className="border-t border-slate-200 bg-white/60">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 text-xs text-slate-500">
-          <span>단국대 강의실 예약관리 시스템 · 웹 포트폴리오</span>
+          <span>단국대 강의실 예약관리 시스템</span>
           <span>Frontend: React + Vite + Tailwind</span>
         </div>
       </footer>

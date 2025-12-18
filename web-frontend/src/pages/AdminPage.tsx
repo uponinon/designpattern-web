@@ -49,7 +49,7 @@ const AdminPage = () => {
           <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">관리자</p>
           <h2 className="mt-2 text-2xl font-bold text-slate-900">강의실/물품 CRUD + 예약 현황</h2>
           <p className="mt-1 text-slate-600">
-            Swing 기능: 강의실·물품 등록/수정/삭제, 예약 리스트, 강제 취소 흐름을 더미 데이터로 제공합니다.
+            강의실·물품 등록/수정/삭제 및 전체 예약 리스트를 관리합니다.
           </p>
         </div>
         {message && <div className="rounded-full bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700">{message}</div>}

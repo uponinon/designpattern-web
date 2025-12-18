@@ -13,25 +13,28 @@ const notices: Notice[] = [
     title: '2025-1학기 강의실 예약 운영 안내',
     date: '2025.03.02',
     content:
-      '이 페이지는 데모용 공지사항입니다. 이후 실제 공지 데이터(서버/DB) 연동 또는 수동 입력으로 내용을 확장할 예정입니다.',
+      '2025-1학기 강의실 예약은 1시간 단위로 운영됩니다. 동일 강의실/동일 날짜 기준으로 겹치는 시간은 예약할 수 없습니다. 사용 후에는 정리 정돈 및 퇴실 점검을 부탁드립니다.',
   },
   {
     id: 'n-2',
     title: '시험 기간(중간/기말) 예약 제한 안내',
     date: '2025.04.10',
-    content: '시험 기간에는 일부 강의실 예약이 제한될 수 있습니다. (데모 텍스트)',
+    content:
+      '중간/기말 시험 기간에는 조용한 학습 환경을 위해 일부 강의실의 예약 가능 시간이 조정될 수 있습니다. 정확한 제한 시간은 학사 공지와 함께 안내됩니다.',
   },
   {
     id: 'n-3',
     title: '시설 점검(프로젝터/음향) 일정 공지',
     date: '2025.05.01',
-    content: '장비 점검으로 인해 특정 시간대 예약이 제한될 수 있습니다. (데모 텍스트)',
+    content:
+      '프로젝터/음향 장비 점검이 예정되어 있어 일부 강의실은 점검 시간 동안 예약이 제한될 수 있습니다. 점검 완료 후 즉시 정상 운영됩니다.',
   },
   {
     id: 'n-4',
     title: '야간 이용 시 안전 수칙 안내',
     date: '2025.05.15',
-    content: '야간 이용 시 안전 수칙을 준수해주세요. (데모 텍스트)',
+    content:
+      '야간 이용 시 출입문 잠금, 전기/난방 확인, 분실물 점검을 꼭 진행해주세요. 긴급 상황 발생 시 즉시 경비실 또는 시설관리팀에 연락 바랍니다.',
   },
 ]
 
@@ -45,7 +48,7 @@ const NoticesPage = () => {
         <div>
           <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">공지사항</p>
           <h1 className="mt-2 text-2xl font-bold text-slate-900">공지 목록</h1>
-          <p className="mt-2 text-slate-600">현재는 더미 데이터로 표시됩니다. 이후 내용은 별도로 추가하면 됩니다.</p>
+          <p className="mt-2 text-slate-600">예약 운영 및 시설 이용 관련 안내를 제공합니다.</p>
         </div>
       </header>
 
@@ -77,13 +80,13 @@ const NoticesPage = () => {
                   <h2 className="text-xl font-bold text-slate-900">{selected.title}</h2>
                   <p className="mt-2 text-sm text-slate-500">{selected.date}</p>
                 </div>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">데모</span>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">공지</span>
               </div>
               <div className="mt-5 rounded-2xl bg-slate-50 p-5 text-sm leading-relaxed text-slate-700 ring-1 ring-slate-100">
                 {selected.content}
               </div>
               <div className="mt-5 rounded-2xl border border-dashed border-slate-200 p-4 text-sm text-slate-600">
-                이후 “첨부파일/작성자/조회수/고정 공지” 등의 필드를 추가할 수 있도록 자리만 마련했습니다.
+                추후 “첨부파일/작성자/조회수/고정 공지” 등의 필드를 확장할 수 있습니다.
               </div>
             </div>
           ) : (

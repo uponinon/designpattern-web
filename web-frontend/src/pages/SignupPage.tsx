@@ -1,4 +1,4 @@
-  import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAppState } from '../state/AppState'
 
@@ -20,15 +20,29 @@ const SignupPage = () => {
   const [passwordConfirm, setPasswordConfirm] = useState('')
   const [message, setMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [isComposingName, setIsComposingName] = useState(false)
 
   const [idPlaceholder, setIdPlaceholder] = useState('학번 입니다.')
+
+  const sanitizeName = (value: string) => value.replace(/[^A-Za-z가-힣\s]/g, '')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setMessage(null)
 
-    if (!userId.trim() || !name.trim() || !password || !passwordConfirm) {
+    const trimmedUserId = userId.trim()
+    const trimmedName = name.trim()
+
+    if (!trimmedUserId || !trimmedName || !password || !passwordConfirm) {
       setMessage('모든 항목을 입력하세요.')
+      return
+    }
+    if (!/^\d+$/.test(trimmedUserId)) {
+      setMessage('아이디(학번)는 숫자만 입력할 수 있습니다.')
+      return
+    }
+    if (!/^[A-Za-z가-힣\s]+$/.test(trimmedName)) {
+      setMessage('실명은 한글/영문만 입력할 수 있습니다. (숫자 불가)')
       return
     }
     if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(password)) {
@@ -41,7 +55,7 @@ const SignupPage = () => {
     }
 
     setLoading(true)
-    const result = await signup({ userId, name, password })
+    const result = await signup({ userId: trimmedUserId, name: trimmedName, password })
     setLoading(false)
     if (!result.ok) {
       setMessage(result.error)
@@ -56,7 +70,7 @@ const SignupPage = () => {
       <div>
         <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">회원가입</p>
         <h1 className="mt-2 text-2xl font-bold text-slate-900">단국대 강의실 예약관리 시스템</h1>
-        <p className="mt-2 text-slate-600">회원가입 후 로그인 상태로 전환됩니다. (현재는 로컬 저장소에 저장되는 데모 구현)</p>
+        <p className="mt-2 text-slate-600">회원가입 후 로그인 상태로 전환됩니다.</p>
       </div>
 
       <div className="rounded-3xl bg-white/90 p-6 shadow-xl shadow-indigo-200/30 ring-1 ring-slate-100">
@@ -66,7 +80,9 @@ const SignupPage = () => {
               아이디
               <input
                 value={userId}
-                onChange={(e) => setUserId(e.target.value)}
+                inputMode="numeric"
+                autoComplete="username"
+                onChange={(e) => setUserId(e.target.value.replace(/\D/g, ''))}
                 placeholder={idPlaceholder}
                 onFocus={() => setIdPlaceholder('')}
                 onBlur={() => setIdPlaceholder(userId.trim() ? '' : '학번 입니다.')}
@@ -77,7 +93,16 @@ const SignupPage = () => {
               실명
               <input
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                autoComplete="name"
+                onCompositionStart={() => setIsComposingName(true)}
+                onCompositionEnd={(e) => {
+                  setIsComposingName(false)
+                  setName(sanitizeName(e.currentTarget.value))
+                }}
+                onChange={(e) => {
+                  const value = e.target.value
+                  setName(isComposingName ? value : sanitizeName(value))
+                }}
                 placeholder="예: 홍길동"
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />

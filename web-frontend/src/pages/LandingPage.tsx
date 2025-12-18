@@ -25,8 +25,8 @@ const LandingPage = () => {
               <span className="ml-2 align-middle text-base font-semibold text-indigo-200">beta</span>
             </h1>
             <p className="mt-4 max-w-xl text-base text-indigo-100/90">
-              Swing 기반 데스크톱 기능을 웹으로 포팅 중입니다. 현재는 더미 데이터로 화면/흐름을 구현하고 있으며, 추후 DB/API 연동을
-              고려해 구조를 분리했습니다.
+              강의실 예약과 물품 대여를 한 곳에서 관리할 수 있도록 구성했습니다. 날짜 선택 후 시간표에서 1시간 단위로 예약 가능 시간을
+              확인하고, 예약/대여 내역은 “나의 예약현황”에서 관리합니다.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
@@ -102,18 +102,39 @@ const LandingPage = () => {
       <section className="grid gap-4 md:grid-cols-3">
         <div className="rounded-2xl bg-white/90 p-6 shadow ring-1 ring-slate-100">
           <h3 className="text-lg font-semibold text-slate-900">가이드</h3>
-          <p className="mt-2 text-sm text-slate-600">예약 가능한 시간대, 중복 검증 기준, 보증금 정책 등을 정리할 예정입니다.</p>
-          <p className="mt-3 text-xs text-slate-500">데모용 섹션</p>
+          <p className="mt-2 text-sm text-slate-600">예약은 1시간 단위로 진행되며, 이미 예약된 시간은 선택할 수 없습니다.</p>
+          <ul className="mt-3 space-y-1 text-sm text-slate-600">
+            <li>운영 시간: 08:00 ~ 22:00</li>
+            <li>예약 단위: 1시간</li>
+            <li>중복 예약: 동일 강의실/일자 기준 불가</li>
+            <li>보증금: 시설별 상이(예약 정보에서 확인)</li>
+          </ul>
         </div>
         <div className="rounded-2xl bg-white/90 p-6 shadow ring-1 ring-slate-100">
           <h3 className="text-lg font-semibold text-slate-900">FAQ</h3>
-          <p className="mt-2 text-sm text-slate-600">“예약 취소는 어디서 하나요?”, “대여 기간은 몇 일인가요?” 등을 제공할 예정입니다.</p>
-          <p className="mt-3 text-xs text-slate-500">데모용 섹션</p>
+          <div className="mt-2 space-y-3 text-sm text-slate-600">
+            <div>
+              <p className="font-semibold text-slate-900">Q. 예약 취소/반납은 어디서 하나요?</p>
+              <p className="mt-1">A. 상단 메뉴의 “나의 예약현황”에서 취소/반납 버튼으로 처리할 수 있습니다.</p>
+            </div>
+            <div>
+              <p className="font-semibold text-slate-900">Q. 같은 시간에 여러 명이 예약할 수 있나요?</p>
+              <p className="mt-1">A. 동일 강의실·동일 날짜 기준으로 겹치는 시간대는 예약할 수 없습니다.</p>
+            </div>
+            <div>
+              <p className="font-semibold text-slate-900">Q. 물품 대여 기간은 어떻게 정해지나요?</p>
+              <p className="mt-1">A. 품목별 대여 가능 기간/재고를 기준으로 대여가 가능합니다.</p>
+            </div>
+          </div>
         </div>
         <div className="rounded-2xl bg-white/90 p-6 shadow ring-1 ring-slate-100">
           <h3 className="text-lg font-semibold text-slate-900">문의</h3>
-          <p className="mt-2 text-sm text-slate-600">포트폴리오용이므로 실제 문의 연결은 생략합니다. UI만 구성했습니다.</p>
-          <p className="mt-3 text-xs text-slate-500">데모용 섹션</p>
+          <p className="mt-2 text-sm text-slate-600">이용 문의 및 시설 관련 요청은 아래 채널로 접수할 수 있습니다.</p>
+          <div className="mt-3 space-y-1 text-sm text-slate-600">
+            <p>시설관리팀: 031-000-0000</p>
+            <p>이메일: facility@dku.example</p>
+            <p>운영 시간: 평일 09:00 ~ 18:00</p>
+          </div>
         </div>
       </section>
     </div>

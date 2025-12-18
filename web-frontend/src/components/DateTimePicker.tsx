@@ -12,6 +12,9 @@ type Props = {
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const
 
+const OPEN_HOUR = 8
+const CLOSE_HOUR = 22 // exclusive (22:00)
+
 const pad2 = (n: number) => String(n).padStart(2, '0')
 
 const parseHour = (t: string) => {
@@ -25,30 +28,16 @@ const toISODate = (year: number, monthIndex: number, day: number) => {
   return `${year}-${m}-${d}`
 }
 
-const clampHour = (h: number) => Math.max(0, Math.min(24, h))
-
-const snapHour = (h: number) => Math.round(h)
-
 const overlapsDisabled = (startHour: number, endHour: number, disabledRanges: Props['disabledRanges']) => {
   if (!disabledRanges || disabledRanges.length === 0) return false
   return disabledRanges.some((r) => startHour < r.endHour && endHour > r.startHour)
 }
 
-const polarToCartesian = (cx: number, cy: number, r: number, angleDeg: number) => {
-  const angleRad = ((angleDeg - 90) * Math.PI) / 180
-  return { x: cx + r * Math.cos(angleRad), y: cy + r * Math.sin(angleRad) }
+const clampToBusinessHours = (startHour: number, endHour: number) => {
+  const s = Math.max(OPEN_HOUR, Math.min(CLOSE_HOUR - 1, startHour))
+  const e = Math.max(s + 1, Math.min(CLOSE_HOUR, endHour))
+  return { startHour: s, endHour: e }
 }
-
-const describeArc = (cx: number, cy: number, r: number, startAngle: number, endAngle: number) => {
-  const start = polarToCartesian(cx, cy, r, endAngle)
-  const end = polarToCartesian(cx, cy, r, startAngle)
-  const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1'
-  return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`
-}
-
-const hourToAngle = (hour: number) => (hour / 24) * 360
-
-const angleToHour = (angleDeg: number) => (angleDeg / 360) * 24
 
 const DateTimePicker = ({ selectedDate, onDateChange, startTime, endTime, onTimeChange, disabled, disabledRanges }: Props) => {
   const selected = useMemo(() => {
@@ -60,10 +49,12 @@ const DateTimePicker = ({ selectedDate, onDateChange, startTime, endTime, onTime
   const [viewYear, setViewYear] = useState(selected.getFullYear())
   const [viewMonth, setViewMonth] = useState(selected.getMonth()) // 0-based
 
-  const [activeHandle, setActiveHandle] = useState<'start' | 'end'>('start')
+  const [rangeAnchorHour, setRangeAnchorHour] = useState<number | null>(null)
 
-  const startHour = parseHour(startTime)
-  const endHour = parseHour(endTime)
+  const selectedKey = selectedDate
+  const selectedIsValid = selectedKey && selectedKey.length === 10
+
+  const { startHour, endHour } = clampToBusinessHours(parseHour(startTime), parseHour(endTime))
 
   const calendar = useMemo(() => {
     const first = new Date(viewYear, viewMonth, 1)
@@ -71,16 +62,11 @@ const DateTimePicker = ({ selectedDate, onDateChange, startTime, endTime, onTime
     const startOffset = first.getDay()
     const cells: Array<{ day: number; inMonth: boolean }> = []
 
-    // leading blanks
     for (let i = 0; i < startOffset; i++) cells.push({ day: 0, inMonth: false })
     for (let day = 1; day <= daysInMonth; day++) cells.push({ day, inMonth: true })
-
-    // trailing to complete weeks
     while (cells.length % 7 !== 0) cells.push({ day: 0, inMonth: false })
     return { daysInMonth, cells }
   }, [viewMonth, viewYear])
-
-  const selectedKey = selectedDate
 
   const prevMonth = () => {
     if (disabled) return
@@ -102,46 +88,31 @@ const DateTimePicker = ({ selectedDate, onDateChange, startTime, endTime, onTime
     onDateChange(toISODate(viewYear, viewMonth, day))
   }
 
-  const setHourFromAngle = (clientX: number, clientY: number, rect: DOMRect) => {
-    const cx = rect.left + rect.width / 2
-    const cy = rect.top + rect.height / 2
-    const dx = clientX - cx
-    const dy = clientY - cy
-    const raw = (Math.atan2(dy, dx) * 180) / Math.PI + 90
-    const angle = (raw + 360) % 360
-    const h = clampHour(snapHour(angleToHour(angle)))
+  const hours = useMemo(() => Array.from({ length: CLOSE_HOUR - OPEN_HOUR }, (_, i) => OPEN_HOUR + i), [])
 
-    if (activeHandle === 'start') {
-      const nextStart = h
-      const nextEnd = Math.max(nextStart + 1, endHour)
-      if (overlapsDisabled(nextStart, nextEnd, disabledRanges)) return
-      onTimeChange(`${pad2(nextStart)}:00`, `${pad2(nextEnd)}:00`)
-    } else {
-      const nextEnd = Math.max(h, startHour + 1)
-      if (overlapsDisabled(startHour, nextEnd, disabledRanges)) return
-      onTimeChange(`${pad2(startHour)}:00`, `${pad2(nextEnd)}:00`)
-    }
+  const resetSelection = () => {
+    setRangeAnchorHour(null)
+    const defaultStart = Math.min(Math.max(OPEN_HOUR, 9), CLOSE_HOUR - 1)
+    onTimeChange(`${pad2(defaultStart)}:00`, `${pad2(defaultStart + 1)}:00`)
   }
 
-  const dial = useMemo(() => {
-    const s = clampHour(startHour)
-    const e = clampHour(Math.max(endHour, s + 1))
-    const startAngle = hourToAngle(s)
-    const endAngle = hourToAngle(e)
-    return { s, e, startAngle, endAngle }
-  }, [endHour, startHour])
+  const pickHour = (hour: number) => {
+    if (disabled || !selectedIsValid) return
+    if (overlapsDisabled(hour, hour + 1, disabledRanges)) return
 
-  const dialDisabledArcs = useMemo(() => {
-    const ranges = disabledRanges ?? []
-    return ranges
-      .map((r) => ({
-        startAngle: hourToAngle(clampHour(r.startHour)),
-        endAngle: hourToAngle(clampHour(r.endHour)),
-      }))
-      .filter((r) => r.endAngle !== r.startAngle)
-  }, [disabledRanges])
+    if (rangeAnchorHour === null) {
+      onTimeChange(`${pad2(hour)}:00`, `${pad2(hour + 1)}:00`)
+      setRangeAnchorHour(hour)
+      return
+    }
 
-  const selectedIsValid = selectedKey && selectedKey.length === 10
+    const nextStart = Math.min(rangeAnchorHour, hour)
+    const nextEnd = Math.max(rangeAnchorHour, hour) + 1
+    if (overlapsDisabled(nextStart, nextEnd, disabledRanges)) return
+
+    onTimeChange(`${pad2(nextStart)}:00`, `${pad2(nextEnd)}:00`)
+    setRangeAnchorHour(null)
+  }
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -184,8 +155,7 @@ const DateTimePicker = ({ selectedDate, onDateChange, startTime, endTime, onTime
             const iso = toISODate(viewYear, viewMonth, c.day)
             const isSelected = iso === selectedKey
             const weekday = (i % 7) as 0 | 1 | 2 | 3 | 4 | 5 | 6
-            const color =
-              weekday === 0 ? 'text-red-500' : weekday === 6 ? 'text-blue-600' : isSelected ? 'text-white' : 'text-slate-900'
+            const color = weekday === 0 ? 'text-red-500' : weekday === 6 ? 'text-blue-600' : isSelected ? 'text-white' : 'text-slate-900'
             const bg = isSelected ? 'bg-blue-600 shadow' : 'hover:bg-slate-100'
 
             return (
@@ -204,128 +174,70 @@ const DateTimePicker = ({ selectedDate, onDateChange, startTime, endTime, onTime
       </div>
 
       <div className="rounded-2xl bg-white/90 p-5 shadow ring-1 ring-slate-100">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">시간 선택</p>
             <p className="mt-1 text-sm text-slate-600">
               {selectedIsValid ? (
                 <>
-                  선택 날짜 <span className="font-semibold text-slate-900">{selectedKey}</span>
+                  선택 날짜 <span className="font-semibold text-slate-900">{selectedKey}</span> ·{' '}
+                  <span className="font-semibold text-slate-900">
+                    {pad2(startHour)}:00 ~ {pad2(endHour)}:00
+                  </span>
                 </>
               ) : (
                 '날짜를 선택하세요'
               )}
             </p>
+            {rangeAnchorHour !== null && selectedIsValid && (
+              <p className="mt-1 text-xs font-semibold text-slate-500">끝 시간을 선택하세요. (1시간 단위)</p>
+            )}
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setActiveHandle('start')}
-              className={`rounded-full px-4 py-2 text-sm font-semibold ring-1 ${
-                activeHandle === 'start' ? 'bg-indigo-600 text-white ring-indigo-500' : 'bg-white text-slate-700 ring-slate-200 hover:bg-slate-100'
-              }`}
-            >
-              시작
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveHandle('end')}
-              className={`rounded-full px-4 py-2 text-sm font-semibold ring-1 ${
-                activeHandle === 'end' ? 'bg-indigo-600 text-white ring-indigo-500' : 'bg-white text-slate-700 ring-slate-200 hover:bg-slate-100'
-              }`}
-            >
-              종료
-            </button>
-          </div>
+          <button type="button" onClick={resetSelection} className="text-sm text-slate-500 underline disabled:opacity-50" disabled={disabled}>
+            선택 해제
+          </button>
         </div>
 
-        <div className="mt-5 flex items-center justify-center">
-          <div className="relative h-[320px] w-[320px]">
-            <svg
-              viewBox="0 0 320 320"
-              className={`h-full w-full ${!selectedIsValid ? 'opacity-60' : ''}`}
-              onClick={(e) => {
-                if (disabled || !selectedIsValid) return
-                const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect()
-                setHourFromAngle(e.clientX, e.clientY, rect)
-              }}
-              role="img"
-              aria-label="시간 선택 다이얼"
-            >
-              {/* base ring */}
-              <circle cx="160" cy="160" r="120" fill="#f1f5f9" />
-              <circle cx="160" cy="160" r="120" fill="none" stroke="#e2e8f0" strokeWidth="18" />
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
+          {hours.map((h) => {
+            const slotDisabled = disabled || !selectedIsValid || overlapsDisabled(h, h + 1, disabledRanges)
+            const slotSelected = selectedIsValid && h >= startHour && h < endHour
+            const slotAnchor = rangeAnchorHour === h
+            const label = `${pad2(h)}:00 ~ ${pad2(h + 1)}:00`
 
-              {/* disabled ranges */}
-              {dialDisabledArcs.map((a, idx) => (
-                <path
-                  key={idx}
-                  d={describeArc(160, 160, 120, a.startAngle, a.endAngle)}
-                  fill="none"
-                  stroke="#cbd5e1"
-                  strokeWidth="18"
-                  strokeLinecap="butt"
-                />
-              ))}
+            const cls = slotDisabled
+              ? 'cursor-not-allowed bg-slate-100 text-slate-400 ring-slate-200'
+              : slotSelected
+                ? 'bg-indigo-600 text-white ring-indigo-500'
+                : 'bg-white text-slate-700 ring-slate-200 hover:bg-slate-50'
 
-              {/* selected range */}
-              {selectedIsValid && (
-                <path
-                  d={describeArc(160, 160, 120, dial.startAngle, dial.endAngle)}
-                  fill="none"
-                  stroke="#2563eb"
-                  strokeWidth="18"
-                  strokeLinecap="butt"
-                />
-              )}
-
-              {/* ticks */}
-              {Array.from({ length: 48 }).map((_, i) => {
-                const angle = (i / 48) * 360
-                const outer = polarToCartesian(160, 160, 142, angle)
-                const inner = polarToCartesian(160, 160, i % 2 === 0 ? 132 : 136, angle)
-                return <line key={i} x1={inner.x} y1={inner.y} x2={outer.x} y2={outer.y} stroke="#cbd5e1" strokeWidth={i % 2 === 0 ? 2 : 1} />
-              })}
-
-              {/* hour labels */}
-              {[0, 3, 6, 9, 12, 15, 18, 21].map((h) => {
-                const pos = polarToCartesian(160, 160, 165, hourToAngle(h))
-                const label = h === 0 ? '24' : String(h)
-                return (
-                  <text key={h} x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="middle" fontSize="14" fill="#475569" fontWeight="700">
-                    {label}
-                  </text>
-                )
-              })}
-
-              {/* center */}
-              <circle cx="160" cy="160" r="78" fill="#ffffff" />
-              <text x="160" y="150" textAnchor="middle" dominantBaseline="middle" fontSize="14" fill="#64748b" fontWeight="700">
-                {selectedIsValid ? '시간을 선택하세요' : '날짜를 선택하세요'}
-              </text>
-              {selectedIsValid && (
-                <text x="160" y="175" textAnchor="middle" dominantBaseline="middle" fontSize="16" fill="#0f172a" fontWeight="800">
-                  {pad2(dial.s)}:00 ~ {pad2(dial.e)}:00
-                </text>
-              )}
-            </svg>
-
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <div className="rounded-full bg-white/70 px-4 py-2 text-xs font-semibold text-slate-600 ring-1 ring-slate-200 backdrop-blur">
-                클릭해서 {activeHandle === 'start' ? '시작' : '종료'} 시간을 선택
-              </div>
-            </div>
-          </div>
+            return (
+              <button
+                key={h}
+                type="button"
+                onClick={() => pickHour(h)}
+                disabled={slotDisabled}
+                className={`rounded-xl px-3 py-3 text-sm font-semibold ring-1 transition ${cls} ${slotAnchor ? 'ring-2 ring-indigo-400' : ''}`}
+                aria-label={label}
+              >
+                {label}
+              </button>
+            )
+          })}
         </div>
 
-        <div className="mt-5 flex items-center justify-center gap-6 text-sm">
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-5 text-sm">
           <div className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full bg-slate-300" />
-            <span className="text-slate-600">예약불가(기예약)</span>
+            <span className="h-3 w-3 rounded bg-slate-200 ring-1 ring-slate-300" />
+            <span className="text-slate-600">예약 있음(선택 불가)</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full bg-blue-600" />
-            <span className="text-slate-600">예약가능(선택)</span>
+            <span className="h-3 w-3 rounded bg-white ring-1 ring-slate-300" />
+            <span className="text-slate-600">예약 가능</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded bg-indigo-600 ring-1 ring-indigo-600" />
+            <span className="text-slate-600">선택됨</span>
           </div>
         </div>
       </div>
@@ -334,4 +246,3 @@ const DateTimePicker = ({ selectedDate, onDateChange, startTime, endTime, onTime
 }
 
 export default DateTimePicker
-
