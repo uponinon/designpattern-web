@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useAppState } from '../state/AppState'
 
 const AdminPage = () => {
-  const { rooms, items, reservations, addRoom, addItem, updateRoom, deleteRoom, deleteItem } = useAppState()
+  const { rooms, items, reservations, addRoom, addItem, updateRoom, deleteRoom, deleteItem, cancelReservation, returnReservation } =
+    useAppState()
   const [roomName, setRoomName] = useState('')
   const [roomDeposit, setRoomDeposit] = useState(50000)
   const [roomSize, setRoomSize] = useState<'small' | 'medium' | 'large'>('small')
@@ -14,6 +15,15 @@ const AdminPage = () => {
   const [itemStock, setItemStock] = useState(1)
 
   const [message, setMessage] = useState<string | null>(null)
+
+  const handleReservationAction = async (id: string, action: 'cancel' | 'return') => {
+    setMessage(null)
+    const confirmed = window.confirm(action === 'cancel' ? '해당 예약을 강제 취소할까요?' : '해당 대여를 강제 반납 처리할까요?')
+    if (!confirmed) return
+
+    const result = action === 'cancel' ? await cancelReservation(id) : await returnReservation(id)
+    setMessage(result.ok ? '처리되었습니다.' : result.error ?? '실패했습니다.')
+  }
 
   const handleAddRoom = async () => {
     setMessage(null)
@@ -229,17 +239,37 @@ const AdminPage = () => {
                   {r.date} {r.startTime}~{r.endTime}
                 </p>
               </div>
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                  r.status === 'active'
-                    ? 'bg-emerald-50 text-emerald-700'
-                    : r.status === 'cancelled'
-                      ? 'bg-amber-50 text-amber-700'
-                      : 'bg-slate-100 text-slate-600'
-                }`}
-              >
-                {r.status}
-              </span>
+              <div className="flex items-center gap-2">
+                {r.status === 'active' && (
+                  <>
+                    <button
+                      onClick={() => handleReservationAction(r.id, 'cancel')}
+                      className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-rose-700 ring-1 ring-rose-100 hover:bg-rose-50"
+                    >
+                      강제 취소
+                    </button>
+                    {r.type === 'item' && (
+                      <button
+                        onClick={() => handleReservationAction(r.id, 'return')}
+                        className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
+                      >
+                        강제 반납
+                      </button>
+                    )}
+                  </>
+                )}
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                    r.status === 'active'
+                      ? 'bg-emerald-50 text-emerald-700'
+                      : r.status === 'cancelled'
+                        ? 'bg-amber-50 text-amber-700'
+                        : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  {r.status}
+                </span>
+              </div>
             </div>
           ))}
           {reservations.length === 0 && <div className="rounded-lg border border-dashed p-4 text-sm text-slate-500">예약 내역이 없습니다.</div>}
